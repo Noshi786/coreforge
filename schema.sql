@@ -1,5 +1,3 @@
-CREATE DATABASE IF NOT EXISTS coreforge_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE coreforge_db;
 
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;

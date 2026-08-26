@@ -264,7 +264,7 @@ require __DIR__ . '/partials/header.php';
           <div class="co-field">
             <label for="customer_name">Full name</label>
             <input class="co-input <?= isset($errors['customer_name']) ? 'bad' : '' ?>" id="customer_name" name="customer_name"
-                   value="<?= e($f['customer_name']) ?>" placeholder="Hikmatullah Khan" required>
+                   value="<?= e($f['customer_name']) ?>" placeholder="Nosheen Fitras" required>
             <div class="co-err <?= isset($errors['customer_name']) ? 'show' : '' ?>"><?= e($errors['customer_name'] ?? '') ?></div>
           </div>
           <div class="co-field">
@@ -339,7 +339,7 @@ require __DIR__ . '/partials/header.php';
         <div class="co-field">
           <label for="card_name">Name on card</label>
           <input class="co-input <?= isset($errors['card_name']) ? 'bad' : '' ?>" id="card_name" name="card_name"
-                 value="<?= e($f['card_name']) ?>" placeholder="HIKMATULLAH KHAN" autocomplete="cc-name" required>
+                 value="<?= e($f['card_name']) ?>" placeholder="NOSHEEN FITRAS" autocomplete="cc-name" required>
           <div class="co-err <?= isset($errors['card_name']) ? 'show' : '' ?>"><?= e($errors['card_name'] ?? '') ?></div>
         </div>
 

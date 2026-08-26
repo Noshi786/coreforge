@@ -60,7 +60,7 @@
     mark.textContent = b;
     tag.textContent = b;
     tag.classList.toggle('on', !!b);
-    cvc.maxLength = isAmex(n) ? 4 : 3;
+    cvc.maxLength = isAmex(n) || !b ? 4 : 3;
     return b;
   }
 

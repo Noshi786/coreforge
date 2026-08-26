@@ -16,8 +16,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     if (!filter_var($form['email'], FILTER_VALIDATE_EMAIL)) $errors[] = 'Please enter a valid email address.';
     if (mb_strlen($form['message']) < 10) $errors[] = 'Please give us a little more detail (at least 10 characters).';
 
-    // No mail server is configured in this project, so the message is acknowledged only.
-    if (!$errors) { $sent = true; $form = ['name'=>'','email'=>'','subject'=>$subjects[0],'message'=>'']; }
+    if (!$errors) {
+      try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS contact_messages (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(120) NOT NULL,
+          email VARCHAR(160) NOT NULL,
+          subject VARCHAR(80) NOT NULL,
+          message TEXT NOT NULL,
+          status VARCHAR(20) NOT NULL DEFAULT 'new',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_contact_created (created_at),
+          INDEX idx_contact_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $stmt = $pdo->prepare("INSERT INTO contact_messages (name, email, subject, message)
+                     VALUES (?, ?, ?, ?)");
+        $stmt->execute([$form['name'], $form['email'], $form['subject'], $form['message']]);
+        $sent = true;
+        $form = ['name'=>'','email'=>'','subject'=>$subjects[0],'message'=>''];
+      } catch (PDOException $ex) {
+        $errors[] = 'We could not save your message right now. Please try again.';
+      }
+    }
 }
 
 $hours = [

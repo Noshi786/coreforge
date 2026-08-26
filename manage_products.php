@@ -6,8 +6,11 @@ $errors = [];
 
 /** Photos available to assign (product shots only, not hero/guide imagery). */
 function productImages(): array {
-    $files = glob(__DIR__ . '/assets/img/*.jpg') ?: [];
-    $names = array_map('basename', $files);
+  $files = glob(__DIR__ . '/assets/img/*') ?: [];
+  $names = array_map('basename', array_filter($files, function ($file) {
+    $info = @getimagesize($file);
+    return $info !== false;
+  }));
     $names = array_values(array_filter($names, fn($n) => !str_starts_with($n, 'hero-') && !str_starts_with($n, 'guide-')));
     sort($names);
     return $names;
@@ -21,6 +24,8 @@ $form  = $blank;
 /* ---------------- Save (insert or update) ---------------- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
     $chosen = $_POST['image'] ?? '';
+    $upload = $_FILES['image_upload'] ?? null;
+    $uploadedImage = null;
     $form = [
         'id'          => $_POST['id'] ?? '',
         'name'        => trim($_POST['name'] ?? ''),
@@ -36,6 +41,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
                          : (CATEGORIES[$_POST['category'] ?? ''] ?? CATEGORIES[array_key_first(CATEGORIES)]),
     ];
 
+      if ($upload && $upload['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($upload['error'] !== UPLOAD_ERR_OK) {
+          $errors['image'] = 'The image could not be uploaded.';
+        } elseif ($upload['size'] > 5 * 1024 * 1024) {
+          $errors['image'] = 'The image must be 5 MB or smaller.';
+        } else {
+          $imageInfo = @getimagesize($upload['tmp_name']);
+          $mimeExtensions = [
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/gif'  => 'gif',
+            'image/webp' => 'webp',
+          ];
+          if ($imageInfo === false || !isset($mimeExtensions[$imageInfo['mime']])) {
+            $errors['image'] = 'Upload a valid JPG, PNG, GIF or WEBP image.';
+          } else {
+            $uploadedImage = 'product-' . bin2hex(random_bytes(8)) . '.' . $mimeExtensions[$imageInfo['mime']];
+          }
+        }
+      }
+
     if ($form['name'] === '')                  $errors['name']     = 'Product name is required.';
     if (!isset(CATEGORIES[$form['category']])) $errors['category'] = 'Choose a valid category.';
     if ($form['sku'] === '')                   $errors['sku']      = 'SKU is required.';
@@ -44,6 +70,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
     if ($price === false || $price < 0)        $errors['price']    = 'Price must be a number of 0 or more.';
     $stock = filter_var($form['stock'], FILTER_VALIDATE_INT);
     if ($stock === false || $stock < 0)        $errors['stock']    = 'Stock must be a whole number of 0 or more.';
+
+    if (!$errors) {
+      if ($uploadedImage && !move_uploaded_file($upload['tmp_name'], __DIR__ . '/assets/img/' . $uploadedImage)) {
+        $errors['image'] = 'The image could not be saved.';
+      } elseif ($uploadedImage) {
+        $form['image'] = $uploadedImage;
+      }
+    }
 
     if (!$errors) {
         $dup = $pdo->prepare("SELECT COUNT(*) FROM products WHERE sku = ? AND id <> ?");
@@ -426,7 +460,7 @@ require __DIR__ . '/partials/admin_header.php';
     </div>
   <?php endif; ?>
 
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="id" value="<?= e((string)$form['id']) ?>">
     <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start" class="dash-grid">
 
@@ -489,8 +523,13 @@ require __DIR__ . '/partials/admin_header.php';
         </div>
 
         <div class="card2 rv">
-          <div class="card2-head"><div><h2>Photo</h2><div class="sub">Pick from the image library</div></div></div>
+          <div class="card2-head"><div><h2>Photo</h2><div class="sub">Upload your own image or pick from the library</div></div></div>
           <div class="card2-body">
+            <div class="f2-field" style="margin-bottom:16px">
+              <label for="image-upload">Upload image</label>
+              <input class="f2-input" id="image-upload" name="image_upload" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
+              <div class="f2-hint">JPG, PNG, GIF or WEBP, up to 5 MB.</div>
+            </div>
             <div class="pick">
               <?php foreach ($images as $img): ?>
                 <label>

@@ -40,20 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     if ($f['card_name'] === '')                                  $errors['card_name']   = 'Enter the name printed on the card.';
     if ($number === '') {
         $errors['card_number'] = 'Enter the card number.';
-    } elseif ($brand === 'Unknown') {
-        $errors['card_number'] = 'We do not recognise that card type. Try a Visa, Mastercard, Amex or Discover number.';
-    } elseif (!cardLengthOk($brand, $number)) {
-        $lens = cardLengths($brand);
-        $need = count($lens) > 1
-            ? implode(', ', array_slice($lens, 0, -1)) . ' or ' . end($lens)
-            : (string)$lens[0];
-        $article = in_array($brand[0], ['A','E','I','O','U'], true) ? 'An' : 'A';
-        $errors['card_number'] = "$article $brand number has $need digits — you entered " . strlen($number) . '.';
-    } elseif (!luhnValid($number)) {
-        // Real card numbers carry a check digit, so an invented number will
-        // almost always land here. Say so plainly instead of just "invalid".
-        $errors['card_number'] = 'That number fails the checksum every real card carries, so it cannot be a genuine card. For this demo use 4242 4242 4242 4242.';
     }
+    // This is a demo checkout: any non-empty card number is accepted.
+    if ($brand === 'Unknown') $brand = 'Card';
 
     $expM = $expY = 0;
     if (!preg_match('#^(\d{2})\s*/\s*(\d{2,4})$#', $f['card_exp'], $m)) {
@@ -66,9 +55,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     }
 
     $cvc  = digitsOnly($f['card_cvc']);
-    $need = cvcLength($brand);
+    $cvcLengthOk = $brand === 'Card'
+      ? in_array(strlen($cvc), [3, 4], true)
+      : strlen($cvc) === cvcLength($brand);
     if ($cvc === '')                    $errors['card_cvc'] = 'Enter the CVC.';
-    elseif (strlen($cvc) !== $need)     $errors['card_cvc'] = "The CVC should be $need digits.";
+    elseif (!$cvcLengthOk)              $errors['card_cvc'] = 'The CVC should be 3 or 4 digits.';
 
     /* ---- Stock still available? ---- */
     if (!$bag) $errors['bag'] = 'Your bag is empty.';
@@ -368,8 +359,8 @@ require __DIR__ . '/partials/header.php';
           </div>
           <div class="co-field" style="display:flex;align-items:flex-end">
             <p class="hint" style="margin:0">
-              <strong>Demo card:</strong> 4242&nbsp;4242&nbsp;4242&nbsp;4242<br>
-              any future expiry, any CVC. Invented numbers are rejected.
+              <strong>Demo payment:</strong> enter any card number<br>
+              with any future expiry and any CVC.
             </p>
           </div>
         </div>

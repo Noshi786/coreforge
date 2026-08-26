@@ -114,3 +114,15 @@ CREATE TABLE admins (
 
 INSERT INTO admins (username, password_hash, display_name, role) VALUES
 ('admin', '$2y$12$cKksimZrv0beKKN5fIziGO/Aq7sv1vqogDfS2lYJgGSXpmL0preyK', 'Store Admin', 'Administrator');
+
+CREATE TABLE contact_messages (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  name       VARCHAR(120) NOT NULL,
+  email      VARCHAR(160) NOT NULL,
+  subject    VARCHAR(80)  NOT NULL,
+  message    TEXT         NOT NULL,
+  status     VARCHAR(20)  NOT NULL DEFAULT 'new',
+  created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_contact_created (created_at),
+  INDEX idx_contact_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
